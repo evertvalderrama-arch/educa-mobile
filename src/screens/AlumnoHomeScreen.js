@@ -202,16 +202,8 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
     return <Text style={styles.celdaVaciaCard}>—</Text>
   }
 
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    )
-  }
-
-  return (
-    <ScrollView style={styles.container}>
+  const renderHeader = () => (
+    <>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -254,7 +246,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
         </TouchableOpacity>
       </View>
 
-      {/* Temas y Calificaciones */}
+      {/* Mensajes de estado */}
       {mostrandoCalificaciones && temas.length === 0 && (
         <View style={styles.section}>
           <Text style={styles.infoText}>No hay temas disponibles para este curso</Text>
@@ -264,46 +256,61 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
       {mostrandoCalificaciones && temas.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📋 Temas y Calificaciones</Text>
-          
-          <FlatList
-            data={temas}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item: tema }) => (
-              <View style={styles.temaCard}>
-                <View style={styles.temaHeader}>
-                  <Text style={styles.temaTituloCard}>{tema.titulo}</Text>
-                </View>
-                
-                <View style={styles.actividadesGrid}>
-                  {['escrita', 'exposicion', 'participacion', 'evaluacion'].map(tipo => {
-                    const actividadInfo = getActividadInfo(tipo)
-                    const actividad = tema.actividades[tipo]
-                    
-                    return (
-                      <TouchableOpacity 
-                        key={tipo} 
-                        style={styles.actividadItem}
-                        onPress={() => actividad && abrirModalActividad(actividad)}
-                        disabled={!actividad}
-                      >
-                        <Text style={styles.actividadIcono}>{actividadInfo.icono}</Text>
-                        <Text style={styles.actividadLabel}>{actividadInfo.label}</Text>
-                        {renderCeldaCard(actividad)}
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
-              </View>
-            )}
-            initialNumToRender={10}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            removeClippedSubviews={true}
-            scrollEnabled={false}
-            contentContainerStyle={styles.temasCards}
-          />
         </View>
       )}
+    </>
+  )
+
+  const renderTema = ({ item: tema }) => (
+    <View style={styles.temaCard}>
+      <View style={styles.temaHeader}>
+        <Text style={styles.temaTituloCard}>{tema.titulo}</Text>
+      </View>
+      
+      <View style={styles.actividadesGrid}>
+        {['escrita', 'exposicion', 'participacion', 'evaluacion'].map(tipo => {
+          const actividadInfo = getActividadInfo(tipo)
+          const actividad = tema.actividades[tipo]
+          
+          return (
+            <TouchableOpacity 
+              key={tipo} 
+              style={styles.actividadItem}
+              onPress={() => actividad && abrirModalActividad(actividad)}
+              disabled={!actividad}
+            >
+              <Text style={styles.actividadIcono}>{actividadInfo.icono}</Text>
+              <Text style={styles.actividadLabel}>{actividadInfo.label}</Text>
+              {renderCeldaCard(actividad)}
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </View>
+  )
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text>Cargando...</Text>
+      </View>
+    )
+  }
+
+  return (
+    <>
+      <FlatList
+        style={styles.container}
+        ListHeaderComponent={renderHeader}
+        data={mostrandoCalificaciones ? temas : []}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderTema}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={styles.flatListContent}
+      />
 
       {/* Modal Actividad */}
       <Modal
@@ -415,7 +422,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </>
   )
 }
 
@@ -443,6 +450,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.secondaryLight
+  },
+  flatListContent: {
+    flexGrow: 1
   },
   header: {
     backgroundColor: colors.primary,
@@ -524,6 +534,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 12,
     padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
     borderLeftWidth: 4,
     borderLeftColor: colors.accent,
     elevation: 3,

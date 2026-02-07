@@ -18,8 +18,8 @@ export default function VisualizarCursosScreen({ navigation }) {
     }
   }
 
-  return (
-    <ScrollView style={styles.container}>
+  const renderHeader = () => (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>👁️ Visualizar Cursos</Text>
       </View>
@@ -62,56 +62,60 @@ export default function VisualizarCursosScreen({ navigation }) {
           <Text style={styles.emptyText}>📭 No se encontraron cursos con estos filtros</Text>
         </View>
       )}
+    </>
+  )
 
-      {resultados && resultados.length > 0 && (
-        <FlatList
-          data={resultados}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item: curso }) => (
-            <View style={styles.cursoCard}>
-              <Text style={styles.cursoNombre}>
-                📚 {curso.curso_nombre || curso.nombre || 'Sin nombre'}
-              </Text>
-              <Text style={styles.cursoInfo}>
-                🎓 Grado: {curso.grado} | Sección: {curso.seccion}
-              </Text>
+  const renderCurso = ({ item: curso }) => (
+    <View style={styles.cursoCard}>
+      <Text style={styles.cursoNombre}>
+        📚 {curso.curso_nombre || curso.nombre || 'Sin nombre'}
+      </Text>
+      <Text style={styles.cursoInfo}>
+        🎓 Grado: {curso.grado} | Sección: {curso.seccion}
+      </Text>
+      
+      {curso.temas && curso.temas.length > 0 && (
+        <View style={styles.temasSection}>
+          <Text style={styles.temasTitle}>📋 Temas:</Text>
+          {curso.temas.map((tema, tIdx) => (
+            <View key={tIdx} style={styles.temaItem}>
+              <View style={styles.temaHeader}>
+                <Text style={styles.temaTitulo}>{tema.titulo}</Text>
+                <Text style={[styles.temaEstado, tema.estado !== 'abierto' && styles.temaEstadoCerrado]}>
+                  {tema.estado === 'abierto' ? '✅ Activo' : '🔒 Cerrado'}
+                </Text>
+              </View>
               
-              {curso.temas && curso.temas.length > 0 && (
-                <View style={styles.temasSection}>
-                  <Text style={styles.temasTitle}>📋 Temas:</Text>
-                  {curso.temas.map((tema, tIdx) => (
-                    <View key={tIdx} style={styles.temaItem}>
-                      <View style={styles.temaHeader}>
-                        <Text style={styles.temaTitulo}>{tema.titulo}</Text>
-                        <Text style={[styles.temaEstado, tema.estado !== 'abierto' && styles.temaEstadoCerrado]}>
-                          {tema.estado === 'abierto' ? '✅ Activo' : '🔒 Cerrado'}
-                        </Text>
-                      </View>
-                      
-                      {tema.actividades && tema.actividades.length > 0 && (
-                        <View style={styles.actividadesSection}>
-                          <Text style={styles.actividadesTitle}>Actividades:</Text>
-                          {tema.actividades.map((act, aIdx) => (
-                            <Text key={aIdx} style={styles.actividadItem}>
-                              • {act.tipo}: {act.titulo}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
-                    </View>
+              {tema.actividades && tema.actividades.length > 0 && (
+                <View style={styles.actividadesSection}>
+                  <Text style={styles.actividadesTitle}>Actividades:</Text>
+                  {tema.actividades.map((act, aIdx) => (
+                    <Text key={aIdx} style={styles.actividadItem}>
+                      • {act.tipo}: {act.titulo}
+                    </Text>
                   ))}
                 </View>
               )}
             </View>
-          )}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
-          contentContainerStyle={styles.resultados}
-        />
+          ))}
+        </View>
       )}
-    </ScrollView>
+    </View>
+  )
+
+  return (
+    <FlatList
+      style={styles.container}
+      ListHeaderComponent={renderHeader}
+      data={resultados || []}
+      keyExtractor={(item, index) => index.toString()}
+      renderItem={renderCurso}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      removeClippedSubviews={true}
+      contentContainerStyle={styles.resultados}
+    />
   )
 }
 
@@ -166,7 +170,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary
   },
   filterButton: {
-    backgroundColor: colors.info,
+    backgroundColor: colors.primary,
     padding: spacing.md,
     borderRadius: 8,
     alignItems: 'center',

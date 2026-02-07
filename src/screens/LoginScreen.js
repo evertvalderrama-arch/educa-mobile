@@ -18,6 +18,17 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true)
     try {
       const u = await api.login({ email, password })
+      
+      // Validar que el usuario tenga rol definido
+      if (!u || !u.rol) {
+        throw new Error('Credenciales incorrectas. Contacte al administrador.')
+      }
+      
+      // Validar que el rol sea válido
+      if (!['admin', 'docente', 'alumno'].includes(u.rol)) {
+        throw new Error('Credenciales incorrectas. Contacte al administrador.')
+      }
+      
       await AsyncStorage.setItem('educa_user', JSON.stringify(u))
       onLogin(u)
     } catch (err) {

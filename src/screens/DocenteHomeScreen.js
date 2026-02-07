@@ -59,12 +59,8 @@ export default function DocenteHomeScreen({ navigation, user, onLogout }) {
     }
   }
 
-  if (!user) {
-    return <View style={styles.container}><Text>Cargando...</Text></View>
-  }
-
-  return (
-    <ScrollView style={styles.container}>
+  const renderHeader = () => (
+    <>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -120,7 +116,7 @@ export default function DocenteHomeScreen({ navigation, user, onLogout }) {
         )}
       </View>
 
-      {/* Lista de temas */}
+      {/* Cabecera de temas */}
       {mostrandoTemas && (
         <View style={styles.temasSection}>
           <View style={styles.temasHeader}>
@@ -138,55 +134,65 @@ export default function DocenteHomeScreen({ navigation, user, onLogout }) {
               <Text style={styles.emptyText}>📭 No hay temas registrados</Text>
             </View>
           )}
-
-          <FlatList
-            data={temas}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item: tema }) => (
-            <View style={styles.temaCard}>
-              <View style={styles.temaHeader}>
-                <Text style={styles.temaTitulo}>{tema.titulo}</Text>
-                <View style={[
-                  styles.estadoBadge,
-                  tema.estado === 'abierto' ? styles.estadoAbierto : styles.estadoCerrado
-                ]}>
-                  <Text style={styles.estadoText}>
-                    {tema.estado === 'abierto' ? '✓ Activo' : '✕ Cerrado'}
-                  </Text>
-                </View>
-              </View>
-              
-              {tema.descripcion && (
-                <Text style={styles.temaDescripcion} numberOfLines={2}>
-                  {tema.descripcion}
-                </Text>
-              )}
-              
-              <View style={styles.temaFooter}>
-                <Text style={styles.temaFecha}>
-                  📅 {new Date(tema.creado_en).toLocaleDateString()}
-                </Text>
-                <TouchableOpacity 
-                  style={styles.detailButton}
-                  onPress={() => {
-                    console.log('🔍 Navegando a EditarTema con temaId:', tema.id)
-                    navigation.navigate('EditarTema', { temaId: tema.id })
-                  }}
-                >
-                  <Text style={styles.detailButtonText}>Ver detalles →</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            )}
-            initialNumToRender={10}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            removeClippedSubviews={true}
-            scrollEnabled={false}
-          />
         </View>
       )}
-    </ScrollView>
+    </>
+  )
+
+  const renderTema = ({ item: tema }) => (
+    <View style={styles.temaCard}>
+      <View style={styles.temaHeader}>
+        <Text style={styles.temaTitulo}>{tema.titulo}</Text>
+        <View style={[
+          styles.estadoBadge,
+          tema.estado === 'abierto' ? styles.estadoAbierto : styles.estadoCerrado
+        ]}>
+          <Text style={styles.estadoText}>
+            {tema.estado === 'abierto' ? '✓ Activo' : '✕ Cerrado'}
+          </Text>
+        </View>
+      </View>
+      
+      {tema.descripcion && (
+        <Text style={styles.temaDescripcion} numberOfLines={2}>
+          {tema.descripcion}
+        </Text>
+      )}
+      
+      <View style={styles.temaFooter}>
+        <Text style={styles.temaFecha}>
+          📅 {new Date(tema.creado_en).toLocaleDateString()}
+        </Text>
+        <TouchableOpacity 
+          style={styles.detailButton}
+          onPress={() => {
+            console.log('🔍 Navegando a EditarTema con temaId:', tema.id)
+            navigation.navigate('EditarTema', { temaId: tema.id })
+          }}
+        >
+          <Text style={styles.detailButtonText}>Ver detalles →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  )
+
+  if (!user) {
+    return <View style={styles.container}><Text>Cargando...</Text></View>
+  }
+
+  return (
+    <FlatList
+      style={styles.container}
+      ListHeaderComponent={renderHeader}
+      data={mostrandoTemas ? temas : []}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={renderTema}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      removeClippedSubviews={true}
+      contentContainerStyle={styles.flatListContent}
+    />
   )
 }
 
@@ -194,6 +200,9 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1,
     backgroundColor: colors.secondaryLight 
+  },
+  flatListContent: {
+    flexGrow: 1
   },
   header: {
     backgroundColor: colors.primary,

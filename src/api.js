@@ -14,6 +14,12 @@ async function request(path, options = {}) {
   const text = await res.text()
   try {
     const data = text ? JSON.parse(text) : null
+    
+    // Verificar si hay error en la respuesta (aunque el status sea 200)
+    if (data && data.error) {
+      throw new Error(data.error)
+    }
+    
     if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`)
     return data
   } catch (err) {

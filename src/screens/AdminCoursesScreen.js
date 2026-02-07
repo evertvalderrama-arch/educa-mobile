@@ -16,46 +16,50 @@ export default function AdminCoursesScreen({ navigation }) {
     return () => mounted = false
   }, [])
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>📚 Lista de Cursos</Text>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {cursos === null && (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Cargando...</Text>
-          </View>
-        )}
-        
-        {cursos && cursos.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>📦 No hay cursos registrados</Text>
-          </View>
-        )}
-        
-        {cursos && cursos.length > 0 && (
-          <FlatList
-            data={cursos}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.cursoCard}>
-                <Text style={styles.cursoNombre}>📚 {item.nombre}</Text>
-                {item.descripcion && (
-                  <Text style={styles.cursoDescripcion}>{item.descripcion}</Text>
-                )}
-              </View>
-            )}
-            initialNumToRender={10}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            removeClippedSubviews={true}
-            contentContainerStyle={styles.listContainer}
-          />
-        )}
-      </ScrollView>
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.title}>📚 Lista de Cursos</Text>
     </View>
+  )
+
+  const renderEmpty = () => {
+    if (cursos === null) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      )
+    }
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>📦 No hay cursos registrados</Text>
+      </View>
+    )
+  }
+
+  const renderCurso = ({ item }) => (
+    <View style={styles.cursoCard}>
+      <Text style={styles.cursoNombre}>📚 {item.nombre}</Text>
+      {item.descripcion && (
+        <Text style={styles.cursoDescripcion}>{item.descripcion}</Text>
+      )}
+    </View>
+  )
+
+  return (
+    <FlatList
+      style={styles.container}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={renderEmpty}
+      data={cursos || []}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={renderCurso}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      removeClippedSubviews={true}
+      contentContainerStyle={styles.listContainer}
+    />
   )
 }
 
@@ -74,9 +78,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textLight,
     textAlign: 'center'
-  },
-  content: {
-    flex: 1
   },
   loadingContainer: {
     padding: spacing.xl,

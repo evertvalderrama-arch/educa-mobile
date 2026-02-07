@@ -159,7 +159,7 @@ export default function ConfigurarCursoScreen({ navigation }) {
         ))}
       </View>
 
-      <Button title="Guardar configuración" onPress={guardarConfiguracion} />
+      <Button title="Guardar configuración" onPress={guardarConfiguracion} color={colors.primary} />
     </ScrollView>
   )
 }

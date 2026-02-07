@@ -126,7 +126,7 @@ export default function ConfigurarUsuarioScreen({ navigation }) {
           onChangeText={setSearchQuery}
           placeholder="Ingrese nombre o email"
         />
-        <Button title="Buscar" onPress={buscarUsuario} />
+        <Button title="Buscar" onPress={buscarUsuario} color={colors.primary} />
       </View>
 
       {/* Mostrar datos del usuario encontrado */}
@@ -207,7 +207,7 @@ export default function ConfigurarUsuarioScreen({ navigation }) {
           )}
 
           <View style={{ height: 16 }} />
-          <Button title="Guardar configuración" onPress={guardarConfiguracion} />
+          <Button title="Guardar configuración" onPress={guardarConfiguracion} color={colors.primary} />
         </View>
       )}
     </ScrollView>
