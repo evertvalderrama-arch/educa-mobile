@@ -11,5 +11,12 @@ local.properties
 *.iml
 *.hprof
 
+# Keystore files (NEVER commit to Git - required for app updates)
+*.keystore
+*.jks
+
+# Keystore configuration (contains sensitive passwords)
+gradle.properties
+
 # Bundle artifacts
 *.jsbundle
