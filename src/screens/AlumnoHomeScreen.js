@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput } from 'react-native'
+import { View, Text, ScrollView, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, Linking } from 'react-native'
 import api from '../api'
 import { colors, spacing } from '../theme'
 import CustomPicker from '../components/CustomPicker'
+import { parseFechaLima, formatearFechaLima, estaVigente, haExpirado } from '../utils/dateUtils'
 
 export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
   const [gradoSeccion, setGradoSeccion] = useState('')
@@ -78,7 +79,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
         }
       })
 
-      setTemas(Object.values(agrupados))
+      setTemas(Object.values(agrupados).sort((a, b) => b.id - a.id))
       setMostrandoCalificaciones(true)
       console.log('✅ Temas agrupados:', Object.values(agrupados).length)
     } catch (err) {
@@ -179,7 +180,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
     // Requiere entrega
     if (actividad.requiere_entrega == 1) {
       const vigente = actividad.fecha_limite 
-        ? new Date(actividad.fecha_limite) >= new Date() 
+        ? estaVigente(actividad.fecha_limite) 
         : true
 
       if (vigente) {
@@ -337,19 +338,48 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
                 <View style={styles.modalSection}>
                   <Text style={styles.modalLabel}>Fecha límite:</Text>
                   <Text style={styles.modalText}>
-                    {new Date(actividadSeleccionada.fecha_limite).toLocaleString('es-PE')}
+                    {formatearFechaLima(actividadSeleccionada.fecha_limite)}
                   </Text>
                 </View>
               )}
 
-              {actividadSeleccionada?.enlace && (
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Enlace:</Text>
-                  <Text style={[styles.modalText, styles.enlaceText]}>
-                    {actividadSeleccionada.enlace}
-                  </Text>
-                </View>
-              )}
+              {actividadSeleccionada?.enlace && (() => {
+                const fechaLimiteExpirada = actividadSeleccionada.fecha_limite 
+                  ? haExpirado(actividadSeleccionada.fecha_limite)
+                  : false
+                
+                return (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalLabel}>Acción requerida por docente:</Text>
+                    <TouchableOpacity 
+                      style={[
+                        styles.enlaceButton,
+                        fechaLimiteExpirada && styles.enlaceButtonDisabled
+                      ]}
+                      onPress={() => {
+                        if (fechaLimiteExpirada) {
+                          Alert.alert(
+                            'Enlace no disponible', 
+                            'La fecha límite de esta actividad ha expirado'
+                          )
+                        } else {
+                          Linking.openURL(actividadSeleccionada.enlace).catch(() => 
+                            Alert.alert('Error', 'No se pudo abrir el enlace')
+                          )
+                        }
+                      }}
+                      disabled={fechaLimiteExpirada}
+                    >
+                      <Text style={[
+                        styles.enlaceButtonText,
+                        fechaLimiteExpirada && styles.enlaceButtonTextDisabled
+                      ]}>
+                        {fechaLimiteExpirada ? '🔒 Enlace expirado' : '🔗 Ir a enlace'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              })()}
 
               {actividadSeleccionada?.calificacion && (
                 <View style={styles.modalSection}>
@@ -372,7 +402,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
               {/* Campo de entrega solo si requiere_entrega=1 y no está calificado */}
               {actividadSeleccionada?.requiere_entrega == 1 && !actividadSeleccionada?.calificacion && (
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Tu entrega:</Text>
+                  <Text style={styles.modalLabel}>Tu mensaje:</Text>
                   <TextInput
                     style={styles.textarea}
                     value={contenido}
@@ -382,7 +412,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
                     numberOfLines={5}
                     editable={
                       !actividadSeleccionada.fecha_limite || 
-                      new Date(actividadSeleccionada.fecha_limite) >= new Date()
+                      estaVigente(actividadSeleccionada.fecha_limite)
                     }
                   />
                 </View>
@@ -391,7 +421,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
               {/* Mostrar contenido si ya fue entregado */}
               {actividadSeleccionada?.contenido && actividadSeleccionada?.calificacion && (
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Tu entrega:</Text>
+                  <Text style={styles.modalLabel}>Tu mensaje:</Text>
                   <View style={styles.comentarioBox}>
                     <Text style={styles.modalText}>{actividadSeleccionada.contenido}</Text>
                   </View>
@@ -410,7 +440,7 @@ export default function AlumnoHomeScreen({ navigation, user, onLogout }) {
               {actividadSeleccionada?.requiere_entrega == 1 && 
                !actividadSeleccionada?.calificacion &&
                (!actividadSeleccionada.fecha_limite || 
-                new Date(actividadSeleccionada.fecha_limite) >= new Date()) && (
+                estaVigente(actividadSeleccionada.fecha_limite)) && (
                 <TouchableOpacity 
                   style={styles.saveButton} 
                   onPress={guardarEntrega}
@@ -643,9 +673,24 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 20
   },
-  enlaceText: {
-    color: colors.info,
-    textDecorationLine: 'underline'
+  enlaceButton: {
+    backgroundColor: colors.info,
+    padding: spacing.md,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: spacing.xs
+  },
+  enlaceButtonDisabled: {
+    backgroundColor: colors.textMuted,
+    opacity: 0.6
+  },
+  enlaceButtonText: {
+    color: colors.textLight,
+    fontWeight: 'bold',
+    fontSize: 14
+  },
+  enlaceButtonTextDisabled: {
+    color: colors.background
   },
   comentarioBox: {
     backgroundColor: colors.secondaryLight,

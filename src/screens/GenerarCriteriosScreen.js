@@ -45,7 +45,7 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
               setEscritaDescripcion(c.descripcion || '')
               setEscritaRequiereEntrega(c.requiere_entrega?.toString() || '1')
               if (c.fecha_limite) {
-                setEscritaFechaLimite(new Date(c.fecha_limite))
+                setEscritaFechaLimite(parseFechaLima(c.fecha_limite))
               }
               setEscritaEnlace(c.enlace || '')
               break
@@ -67,28 +67,6 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
     } catch (err) {
       console.error('Error cargando criterios:', err)
     }
-  }
-
-  const formatearFechaParaDB = (fecha) => {
-    if (!fecha) return null
-    const year = fecha.getFullYear()
-    const month = String(fecha.getMonth() + 1).padStart(2, '0')
-    const day = String(fecha.getDate()).padStart(2, '0')
-    const hours = String(fecha.getHours()).padStart(2, '0')
-    const minutes = String(fecha.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}`
-  }
-
-  const formatearFechaLegible = (fecha) => {
-    if (!fecha) return 'No establecida'
-    const opciones = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }
-    return fecha.toLocaleDateString('es-ES', opciones)
   }
 
   const onChangeFecha = (event, selectedDate) => {
@@ -115,7 +93,7 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
         titulo: escritaTitulo,
         descripcion: escritaDescripcion,
         requiere_entrega: escritaRequiereEntrega,
-        fecha_limite: formatearFechaParaDB(escritaFechaLimite),
+        fecha_limite: formatearParaDB(escritaFechaLimite),
         enlace: escritaEnlace || null
       },
       {
@@ -199,7 +177,7 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
         
         <View style={styles.selectedDateContainer}>
           <Text style={styles.selectedDateLabel}>Fecha seleccionada:</Text>
-          <Text style={styles.selectedDateText}>{formatearFechaLegible(escritaFechaLimite)}</Text>
+          <Text style={styles.selectedDateText}>{fechaLegible(escritaFechaLimite)}</Text>
         </View>
 
         {mostrarDatePicker && (

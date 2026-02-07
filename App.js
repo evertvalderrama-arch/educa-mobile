@@ -16,6 +16,7 @@ import VisualizarCursosScreen from './src/screens/VisualizarCursosScreen'
 import GenerarCriteriosScreen from './src/screens/GenerarCriteriosScreen'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import logger from './src/utils/logger'
+import { setSessionExpiredCallback } from './src/api'
 
 const Stack = createNativeStackNavigator()
 
@@ -25,6 +26,12 @@ export default function App() {
   const navigationRef = React.useRef(null)
 
   useEffect(() => {
+    // Configurar callback de sesión expirada
+    setSessionExpiredCallback(() => {
+      logger.log('🔒 Sesión expirada detectada, cerrando sesión...')
+      handleSessionExpired()
+    })
+    
     AsyncStorage.getItem('educa_user').then(s => {
       if (s) {
         const userData = JSON.parse(s)
@@ -42,6 +49,16 @@ export default function App() {
     navigation?.reset({ index: 0, routes: [{ name: 'Login' }] })
   }
 
+  const handleSessionExpired = async () => {
+    logger.log('⏰ Manejando sesión expirada')
+    await AsyncStorage.removeItem('educa_user')
+    setUser(null)
+    // Usar el ref de navegación para redirigir
+    if (navigationRef.current) {
+      navigationRef.current.reset({ index: 0, routes: [{ name: 'Login' }] })
+    }
+  }
+
   if (loading) return null
 
   const initialRoute = user ? (user.rol === 'admin' ? 'AdminHome' : user.rol === 'docente' ? 'DocenteHome' : 'AlumnoHome') : 'Login'
@@ -56,7 +73,7 @@ export default function App() {
       }}
     >
       <Stack.Navigator initialRouteName={initialRoute}>
-        <Stack.Screen name="Login" options={{ title: 'Iniciar sesión' }}>
+        <Stack.Screen name="Login" options={{ title: 'Bienvenido' }}>
           {props => (
             <LoginScreen
               {...props}

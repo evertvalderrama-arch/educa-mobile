@@ -1,5 +1,12 @@
 const API_BASE = 'https://educa.tyjet.org/api'
 
+// Callback para manejar sesión expirada
+let onSessionExpired = null
+
+export function setSessionExpiredCallback(callback) {
+  onSessionExpired = callback
+}
+
 async function request(path, options = {}) {
   const url = `${API_BASE}${path}`
   const init = {
@@ -12,11 +19,30 @@ async function request(path, options = {}) {
 
   const res = await fetch(url, init)
   const text = await res.text()
+  
+  // Detectar sesión expirada o no autorizada
+  if (res.status === 401 || res.status === 403) {
+    console.log('🔒 Sesión expirada o no autorizada')
+    if (onSessionExpired) {
+      onSessionExpired()
+    }
+    throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.')
+  }
+  
   try {
     const data = text ? JSON.parse(text) : null
     
     // Verificar si hay error en la respuesta (aunque el status sea 200)
     if (data && data.error) {
+      // Mensajes específicos de sesión expirada del backend
+      if (data.error.toLowerCase().includes('sesión') || 
+          data.error.toLowerCase().includes('no autenticado') ||
+          data.error.toLowerCase().includes('no autorizado')) {
+        console.log('🔒 Error de autenticación detectado:', data.error)
+        if (onSessionExpired) {
+          onSessionExpired()
+        }
+      }
       throw new Error(data.error)
     }
     

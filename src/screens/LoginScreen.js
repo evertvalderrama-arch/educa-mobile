@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Linking } from 'react-native'
 import api from '../api'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, spacing } from '../theme'
@@ -93,6 +93,26 @@ export default function LoginScreen({ onLogin }) {
               {loading ? 'Iniciando sesión...' : 'Entrar'}
             </Text>
           </TouchableOpacity>
+
+          {/* Texto legal */}
+          <View style={styles.legalContainer}>
+            <Text style={styles.legalText}>
+              Al acceder, aceptas nuestra{' '}
+              <Text 
+                style={styles.legalLink} 
+                onPress={() => Linking.openURL('https://educa.tyjet.org/privacy-policy.html')}
+              >
+                Política de Privacidad
+              </Text>
+              {' y los '}
+              <Text 
+                style={styles.legalLink} 
+                onPress={() => Linking.openURL('https://educa.tyjet.org/terms-of-service.html')}
+              >
+                Términos de Servicio
+              </Text>
+            </Text>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -181,5 +201,22 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontSize: 16,
     fontWeight: 'bold'
+  },
+  legalContainer: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border
+  },
+  legalText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18
+  },
+  legalLink: {
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline'
   }
 })

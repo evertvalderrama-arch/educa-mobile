@@ -3,6 +3,7 @@ import { View, Text, ScrollView, FlatList, StyleSheet, TouchableOpacity, Alert }
 import api from '../api'
 import { colors, spacing } from '../theme'
 import CustomPicker from '../components/CustomPicker'
+import { parseFechaLima } from '../utils/dateUtils'
 
 export default function DocenteHomeScreen({ navigation, user, onLogout }) {
   const [cursos, setCursos] = useState(null)
@@ -161,7 +162,7 @@ export default function DocenteHomeScreen({ navigation, user, onLogout }) {
       
       <View style={styles.temaFooter}>
         <Text style={styles.temaFecha}>
-          📅 {new Date(tema.creado_en).toLocaleDateString()}
+          📅 {parseFechaLima(tema.creado_en).toLocaleDateString('es-PE')}
         </Text>
         <TouchableOpacity 
           style={styles.detailButton}

@@ -2,14 +2,14 @@
   "expo": {
     "name": "Educa UNS",
     "slug": "educa-uns",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "platforms": ["android"],
     "android": {
       "package": "org.tyjet.educa",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2196F3"
