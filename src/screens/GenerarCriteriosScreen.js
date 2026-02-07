@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TextInput, Button, ScrollView, StyleSheet, Alert } from 'react-native'
+import { View, Text, TextInput, Button, ScrollView, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import api from '../api'
 import { colors, spacing } from '../theme'
 import CustomPicker from '../components/CustomPicker'
@@ -11,8 +12,10 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
   const [escritaTitulo, setEscritaTitulo] = useState('')
   const [escritaDescripcion, setEscritaDescripcion] = useState('')
   const [escritaRequiereEntrega, setEscritaRequiereEntrega] = useState('1')
-  const [escritaFechaLimite, setEscritaFechaLimite] = useState('')
+  const [escritaFechaLimite, setEscritaFechaLimite] = useState(new Date())
   const [escritaEnlace, setEscritaEnlace] = useState('')
+  const [mostrarDatePicker, setMostrarDatePicker] = useState(false)
+  const [mostrarTimePicker, setMostrarTimePicker] = useState(false)
 
   // Exposición
   const [exposicionTitulo, setExposicionTitulo] = useState('')
@@ -41,7 +44,9 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
               setEscritaTitulo(c.titulo || '')
               setEscritaDescripcion(c.descripcion || '')
               setEscritaRequiereEntrega(c.requiere_entrega?.toString() || '1')
-              setEscritaFechaLimite(c.fecha_limite || '')
+              if (c.fecha_limite) {
+                setEscritaFechaLimite(new Date(c.fecha_limite))
+              }
               setEscritaEnlace(c.enlace || '')
               break
             case 'exposicion':
@@ -61,7 +66,45 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
       }
     } catch (err) {
       console.error('Error cargando criterios:', err)
-      // No mostrar alert, simplemente dejamos los campos vacíos para crear nuevos
+    }
+  }
+
+  const formatearFechaParaDB = (fecha) => {
+    if (!fecha) return null
+    const year = fecha.getFullYear()
+    const month = String(fecha.getMonth() + 1).padStart(2, '0')
+    const day = String(fecha.getDate()).padStart(2, '0')
+    const hours = String(fecha.getHours()).padStart(2, '0')
+    const minutes = String(fecha.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  }
+
+  const formatearFechaLegible = (fecha) => {
+    if (!fecha) return 'No establecida'
+    const opciones = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }
+    return fecha.toLocaleDateString('es-ES', opciones)
+  }
+
+  const onChangeFecha = (event, selectedDate) => {
+    setMostrarDatePicker(false)
+    if (selectedDate) {
+      const nuevaFecha = new Date(selectedDate)
+      nuevaFecha.setHours(escritaFechaLimite.getHours())
+      nuevaFecha.setMinutes(escritaFechaLimite.getMinutes())
+      setEscritaFechaLimite(nuevaFecha)
+    }
+  }
+
+  const onChangeHora = (event, selectedTime) => {
+    setMostrarTimePicker(false)
+    if (selectedTime) {
+      setEscritaFechaLimite(selectedTime)
     }
   }
 
@@ -72,7 +115,7 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
         titulo: escritaTitulo,
         descripcion: escritaDescripcion,
         requiere_entrega: escritaRequiereEntrega,
-        fecha_limite: escritaFechaLimite || null,
+        fecha_limite: formatearFechaParaDB(escritaFechaLimite),
         enlace: escritaEnlace || null
       },
       {
@@ -136,12 +179,49 @@ export default function GenerarCriteriosScreen({ route, navigation }) {
             { label: 'No', value: '0' },
           ]}
         />
-        <TextInput
-          style={styles.input}
-          value={escritaFechaLimite}
-          onChangeText={setEscritaFechaLimite}
-          placeholder="Fecha límite (YYYY-MM-DD HH:MM)"
-        />
+        
+        <Text style={styles.label}>Fecha límite de entrega</Text>
+        <View style={styles.dateTimeContainer}>
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => setMostrarDatePicker(true)}
+          >
+            <Text style={styles.dateButtonText}>📅 Cambiar fecha</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => setMostrarTimePicker(true)}
+          >
+            <Text style={styles.dateButtonText}>🕐 Cambiar hora</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.selectedDateContainer}>
+          <Text style={styles.selectedDateLabel}>Fecha seleccionada:</Text>
+          <Text style={styles.selectedDateText}>{formatearFechaLegible(escritaFechaLimite)}</Text>
+        </View>
+
+        {mostrarDatePicker && (
+          <DateTimePicker
+            value={escritaFechaLimite}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onChangeFecha}
+            minimumDate={new Date()}
+          />
+        )}
+
+        {mostrarTimePicker && (
+          <DateTimePicker
+            value={escritaFechaLimite}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onChangeHora}
+            is24Hour={true}
+          />
+        )}
+        
         <TextInput
           style={styles.input}
           value={escritaEnlace}
@@ -258,5 +338,41 @@ const styles = StyleSheet.create({
   textarea: { 
     height: 80, 
     textAlignVertical: 'top' 
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md
+  },
+  dateButton: {
+    flex: 1,
+    backgroundColor: colors.info,
+    padding: spacing.md,
+    borderRadius: 6,
+    alignItems: 'center',
+    elevation: 2
+  },
+  dateButtonText: {
+    color: colors.textLight,
+    fontWeight: '600',
+    fontSize: 14
+  },
+  selectedDateContainer: {
+    backgroundColor: colors.secondaryLight,
+    padding: spacing.md,
+    borderRadius: 6,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.info
+  },
+  selectedDateLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs
+  },
+  selectedDateText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: '600'
   }
 })

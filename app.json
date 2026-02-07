@@ -1,9 +1,26 @@
 {
   "expo": {
-    "name": "Educa Mobile",
-    "slug": "educa-mobile",
-    "version": "0.1.0",
-    "sdkVersion": "48.0.0",
-    "platforms": ["ios", "android", "web"]
+    "name": "Educa UNS",
+    "slug": "educa-uns",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": ["android"],
+    "android": {
+      "package": "org.tyjet.educa",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2196F3"
+      },
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    }
   }
 }

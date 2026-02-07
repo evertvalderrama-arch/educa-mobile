@@ -23,7 +23,8 @@ yarn-error.log
 *.swo
 *~
 
-# Logs
+# Logs y docs
+docs/
 logs/
 *.log
 

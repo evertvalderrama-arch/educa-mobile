@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, TextInput, Button, ScrollView, FlatList, StyleSheet, Alert, TouchableOpacity, Modal } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import api from '../api'
 import { colors, spacing } from '../theme'
 import CustomPicker from '../components/CustomPicker'
@@ -12,6 +13,7 @@ export default function EditarTemaScreen({ route, navigation }) {
   const [estado, setEstado] = useState('abierto')
   const [alumnos, setAlumnos] = useState([])
   const [criterios, setCriterios] = useState([])
+  const [listaGenerada, setListaGenerada] = useState(false)
   
   // Modales
   const [modalEditarVisible, setModalEditarVisible] = useState(false)
@@ -20,9 +22,11 @@ export default function EditarTemaScreen({ route, navigation }) {
   const [calificacion, setCalificacion] = useState('')
   const [comentario, setComentario] = useState('')
 
-  useEffect(() => {
-    cargarDatos()
-  }, [temaId])
+  useFocusEffect(
+    React.useCallback(() => {
+      cargarDatos()
+    }, [temaId])
+  )
 
   const cargarDatos = async () => {
     try {
@@ -36,7 +40,28 @@ export default function EditarTemaScreen({ route, navigation }) {
       setCriterios(crit || [])
 
       const alums = await api.listarAlumnosConEntregas(temaId)
-      setAlumnos(alums || [])
+      
+      // Verificar si la lista fue generada: al menos una entrega con ID válido
+      const tieneEntregas = alums && alums.length > 0 && alums.some(alumno => {
+        if (!alumno.entregas) return false
+        return Object.values(alumno.entregas).some(entrega => entrega && entrega.id)
+      })
+      
+      console.log('🔍 Verificación lista generada:', {
+        alumnosLength: alums?.length || 0,
+        tieneEntregas,
+        primerAlumno: alums?.[0],
+        primeraEntrega: alums?.[0]?.entregas
+      })
+      
+      setListaGenerada(tieneEntregas)
+      
+      // Solo guardar alumnos si la lista fue generada
+      if (tieneEntregas) {
+        setAlumnos(alums || [])
+      } else {
+        setAlumnos([])
+      }
     } catch (err) {
       Alert.alert('Error', 'No se pudo cargar el tema')
     }
@@ -59,6 +84,11 @@ export default function EditarTemaScreen({ route, navigation }) {
   }
 
   const generarLista = async () => {
+    if (criterios.length === 0) {
+      Alert.alert('Error', 'Debe generar criterios primero')
+      return
+    }
+    
     try {
       await api.generarLista(temaId)
       Alert.alert('Éxito', 'Lista generada para todos los alumnos')
@@ -120,8 +150,8 @@ export default function EditarTemaScreen({ route, navigation }) {
 
   if (!tema) return <View style={styles.container}><Text>Cargando...</Text></View>
 
-  return (
-    <ScrollView style={styles.container}>
+  const renderHeader = () => (
+    <>
       {/* Header con estado y título */}
       <View style={styles.headerSection}>
         <View style={[
@@ -155,8 +185,8 @@ export default function EditarTemaScreen({ route, navigation }) {
         </View>
       </View>
 
-      {/* Lista de alumnos */}
-      <View style={styles.alumnosSection}>
+      {/* Sección Lista de alumnos */}
+      <View style={styles.alumnosSectionHeader}>
         <Text style={styles.sectionTitle}>Lista de alumnos</Text>
         
         <TouchableOpacity 
@@ -165,59 +195,77 @@ export default function EditarTemaScreen({ route, navigation }) {
           disabled={criterios.length === 0}
         >
           <Text style={styles.generarButtonText}>
-            {criterios.length === 0 ? '⚠️ Debe generar criterios primero' : '✓ Generar lista'}
+            {criterios.length === 0 
+              ? '⚠️ Debe generar criterios primero' 
+              : listaGenerada 
+                ? '🔄 Refrescar lista' 
+                : '📝 Generar lista'}
           </Text>
         </TouchableOpacity>
 
-        {alumnos.length === 0 && (
-          <Text style={styles.info}>No hay alumnos en la lista. Presione "Generar lista"</Text>
+        {!listaGenerada && criterios.length > 0 && (
+          <Text style={styles.infoWarning}>
+            ⚠️ Presione "Generar lista" para crear las entregas de los alumnos
+          </Text>
         )}
-
-        {alumnos.length > 0 && (
-          <FlatList
-            data={alumnos}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item: alumno }) => (
-              <View style={styles.alumnoCard}>
-                {/* Nombre del alumno */}
-                <View style={styles.alumnoHeader}>
-                  <Text style={styles.alumnoNombre}>🧑 {alumno.nombre}</Text>
-                </View>
-                
-                {/* Grid de calificaciones 2x2 */}
-                <View style={styles.calificacionesGrid}>
-                  {[
-                    { tipo: 'escrita', icono: '✍️', label: 'Escrita' },
-                    { tipo: 'exposicion', icono: '🎤', label: 'Exposición' },
-                    { tipo: 'participacion', icono: '🙋', label: 'Participación' },
-                    { tipo: 'evaluacion', icono: '📊', label: 'Evaluación' }
-                  ].map(({ tipo, icono, label }) => {
-                    const entrega = alumno.entregas?.[tipo]
-                    return (
-                      <TouchableOpacity
-                        key={tipo}
-                        style={styles.calificacionItem}
-                        onPress={() => entrega && abrirModalEntrega(entrega, tipo)}
-                      >
-                        <Text style={styles.calificacionIcono}>{icono}</Text>
-                        <Text style={styles.calificacionLabel}>{label}</Text>
-                        <Text style={getCalificacionStyleCard(entrega?.calificacion)}>
-                          {entrega?.calificacion || '—'}
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
-              </View>
-            )}
-            initialNumToRender={20}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            removeClippedSubviews={true}
-            contentContainerStyle={styles.alumnosCards}
-          />
+        
+        {listaGenerada && (
+          <Text style={styles.infoSuccess}>
+            ℹ️ Use "Refrescar lista" si hay nuevos alumnos inscritos
+          </Text>
         )}
       </View>
+    </>
+  )
+
+  const renderAlumnoItem = ({ item: alumno }) => (
+    <View style={styles.alumnoCard}>
+      {/* Nombre del alumno */}
+      <View style={styles.alumnoHeader}>
+        <Text style={styles.alumnoNombre}>🧑 {alumno.nombre}</Text>
+      </View>
+      
+      {/* Grid de calificaciones 2x2 */}
+      <View style={styles.calificacionesGrid}>
+        {[
+          { tipo: 'escrita', icono: '✍️', label: 'Escrita' },
+          { tipo: 'exposicion', icono: '🎤', label: 'Exposición' },
+          { tipo: 'participacion', icono: '🙋', label: 'Participación' },
+          { tipo: 'evaluacion', icono: '📊', label: 'Evaluación' }
+        ].map(({ tipo, icono, label }) => {
+          const entrega = alumno.entregas?.[tipo]
+          return (
+            <TouchableOpacity
+              key={tipo}
+              style={styles.calificacionItem}
+              onPress={() => entrega && abrirModalEntrega(entrega, tipo)}
+            >
+              <Text style={styles.calificacionIcono}>{icono}</Text>
+              <Text style={styles.calificacionLabel}>{label}</Text>
+              <Text style={getCalificacionStyleCard(entrega?.calificacion)}>
+                {entrega?.calificacion || '—'}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </View>
+  )
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={listaGenerada ? alumnos : []}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderAlumnoItem}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={null}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={styles.flatListContent}
+      />
 
       {/* Modal Editar Tema */}
       <Modal
@@ -316,7 +364,7 @@ export default function EditarTemaScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   )
 }
 
@@ -344,9 +392,11 @@ const getCalificacionStyleCard = (cal) => {
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1, 
-    padding: spacing.lg, 
+    flex: 1,
     backgroundColor: colors.secondaryLight 
+  },
+  flatListContent: {
+    padding: spacing.lg,
   },
   headerSection: {
     backgroundColor: colors.background,
@@ -407,10 +457,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14
   },
-  alumnosSection: {
+  alumnosSectionHeader: {
     backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: 8,
+    marginBottom: spacing.md,
     elevation: 3
   },
   sectionTitle: { 
@@ -424,7 +475,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: 6,
     alignItems: 'center',
-    marginBottom: spacing.lg
+    marginBottom: spacing.sm
   },
   generarButtonDisabled: {
     backgroundColor: colors.textMuted
@@ -439,10 +490,28 @@ const styles = StyleSheet.create({
     color: colors.textSecondary, 
     fontStyle: 'italic', 
     textAlign: 'center',
-    marginVertical: spacing.lg
+    marginVertical: spacing.lg,
+    padding: spacing.lg
   },
-  alumnosCards: {
-    gap: spacing.md
+  infoWarning: {
+    fontSize: 13,
+    color: colors.warning,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    backgroundColor: colors.secondaryLight,
+    padding: spacing.sm,
+    borderRadius: 6
+  },
+  infoSuccess: {
+    fontSize: 13,
+    color: colors.info,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    backgroundColor: colors.secondaryLight,
+    padding: spacing.sm,
+    borderRadius: 6
   },
   alumnoCard: {
     backgroundColor: colors.background,
