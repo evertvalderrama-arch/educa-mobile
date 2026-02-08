@@ -36,6 +36,12 @@ coverage/
 *.ipa
 *.aab
 
+# Android Keystore (CRÍTICO - NO SUBIR)
+*.keystore
+*.jks
+android/gradle.properties
+android/app/*.keystore
+
 # Temporary files
 *.tmp
 .expo-shared/
